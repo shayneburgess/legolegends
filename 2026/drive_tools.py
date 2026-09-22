@@ -24,6 +24,7 @@ class RobotConfig:
     TURN_TOLERANCE = 1.0
     LOOP_MS = 40
     MAX_LOOPS = 3000
+    DRIVE_STALL_LOOPS = 25
 
 
 class Robot:
@@ -99,6 +100,8 @@ class Robot:
             acceleration=acceleration,
         )
         decelerating = False
+        last_traveled = 0
+        stalled_loops = 0
         try:
             while True:
                 traveled = (
@@ -108,6 +111,13 @@ class Robot:
                 remaining = target_degrees - traveled
                 if remaining <= 0:
                     break
+                if traveled > last_traveled:
+                    last_traveled = traveled
+                    stalled_loops = 0
+                else:
+                    stalled_loops += 1
+                    if stalled_loops >= self.cfg.DRIVE_STALL_LOOPS:
+                        raise RuntimeError("drive stalled; check motors on ports F and A")
                 if not decelerating and remaining <= ramp_degrees:
                     slow_velocity = abs(self._velocity(
                         min(requested_speed, self.cfg.MIN_DRIVE_SPEED)
