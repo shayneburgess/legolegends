@@ -33,6 +33,21 @@ DELIMITER = 0x02
 MAX_BLOCK_SIZE = 84
 XOR = 0x03
 IMPORT_PATTERN = re.compile(r"^from\s+([\w\d_]+)\s+import\s+\*\s*$")
+SLOT_PATTERN = re.compile(
+    r"^#\s*LEGO\s+slot:\s*(\d+)(?:\s+autostart)?\s*$",
+    re.IGNORECASE,
+)
+
+
+def slot_from_header(path):
+    for line in path.read_text(encoding="utf-8").splitlines()[:5]:
+        match = SLOT_PATTERN.match(line)
+        if match:
+            slot = int(match.group(1))
+            if slot not in range(20):
+                raise ValueError(f"LEGO slot must be between 0 and 19, got {slot}")
+            return slot
+    return None
 
 
 def crc(data, seed=0):
@@ -360,7 +375,7 @@ async def upload_program(path, slot, start, transport, port):
 def main():
     parser = argparse.ArgumentParser(description="Upload Python to a SPIKE Prime HubOS3 hub")
     parser.add_argument("file", type=Path, nargs="?")
-    parser.add_argument("--slot", type=int, default=0, choices=range(20))
+    parser.add_argument("--slot", type=int, choices=range(20))
     parser.add_argument("--clear-slot", type=int, action="append", choices=range(20))
     parser.add_argument("--clear-all", action="store_true")
     parser.add_argument("--no-start", action="store_true")
@@ -379,10 +394,17 @@ def main():
 
     if args.file is None:
         parser.error("file is required unless --clear-slot or --clear-all is used")
+    slot = args.slot
+    if slot is None:
+        slot = slot_from_header(args.file)
+        if slot is None:
+            slot = 0
+        else:
+            print(f"Using slot {slot} from {args.file.name}")
     asyncio.run(
         upload_program(
             args.file,
-            args.slot,
+            slot,
             not args.no_start,
             args.transport,
             args.port,
