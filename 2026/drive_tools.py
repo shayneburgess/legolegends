@@ -22,6 +22,7 @@ class RobotConfig:
     DEFAULT_TURN_SPEED = 12
     MIN_TURN_SPEED = 5
     TURN_TOLERANCE = 1.0
+    TURN_STOP_LEAD_MS = 100
     LOOP_MS = 40
     MAX_LOOPS = 3000
     DRIVE_STALL_LOOPS = 25
@@ -194,7 +195,10 @@ class Robot:
                     self._heading + step * direction
                 )
                 remaining = target_degrees - turned
-                if remaining <= self.cfg.TURN_TOLERANCE:
+                stopping_distance = (
+                    turn_rate * self.cfg.TURN_STOP_LEAD_MS / 10000
+                )
+                if remaining <= self.cfg.TURN_TOLERANCE + stopping_distance:
                     break
 
                 ramp = min(1.0, turned / 15, remaining / 25)

@@ -6,11 +6,11 @@ mission = Robot()
 
 
 async def main():
-	print("RUN 1 REV 2026-09-22")
-	await mission.drive(60, speed=50)
-	await mission.turn(-100)
-	await mission.turn(100)
-	await mission.drive(-60, speed=50)
+	await mission.turn(-90)
+	#await mission.drive(80, speed=50)
+	#await mission.turn(-100)
+	#await mission.turn(100)
+	#await mission.drive(-80, speed=50)
 	#await mission.turn(-45,100)
 	#await mission.drive(10)
 	#await mission.turn(-45)
