@@ -8,6 +8,8 @@ mission = Robot()
 async def main():
 	await mission.drive(80, speed=50)
 	await mission.turn(-100)
+	await mission.turn(100)
+	await mission.drive(-80, speed=50)
 	#await mission.turn(-45,100)
 	#await mission.drive(10)
 	#await mission.turn(-45)
