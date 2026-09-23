@@ -81,6 +81,10 @@ class Robot:
             return
 
         direction = 1 if distance_cm > 0 else -1
+        if target_angle is None:
+            target_angle = self.get_yaw()
+        else:
+            target_angle = self._normalize_angle(target_angle)
         requested_speed = max(1, min(100, abs(speed)))
         target_degrees = int(
             abs(distance_cm) * 360 / self.cfg.WHEEL_CIRCUMFERENCE_CM
@@ -118,13 +122,37 @@ class Robot:
                     stalled_loops += 1
                     if stalled_loops >= self.cfg.DRIVE_STALL_LOOPS:
                         raise RuntimeError("drive stalled; check motors on ports F and A")
+
+                yaw_rate = self._yaw_rate()
+                self._heading = self._normalize_angle(
+                    self._heading + yaw_rate * self.cfg.LOOP_MS / 1000
+                )
+                heading_error = self._normalize_angle(target_angle - self._heading)
+                if abs(heading_error) <= self.cfg.DRIVE_DEADBAND:
+                    steering = 0
+                else:
+                    steering = direction * (
+                        self.cfg.DRIVE_GAIN * heading_error
+                        - self.cfg.DRIVE_DAMPING * yaw_rate
+                    )
+                steering = int(max(
+                    -self.cfg.MAX_STEERING,
+                    min(self.cfg.MAX_STEERING, steering),
+                ))
+                motor_pair.move(
+                    self.cfg.MOTOR_PAIR_ID,
+                    steering,
+                    velocity=velocity * direction * self.cfg.DRIVE_POLARITY,
+                    acceleration=acceleration,
+                )
                 if not decelerating and remaining <= ramp_degrees:
                     slow_velocity = abs(self._velocity(
                         min(requested_speed, self.cfg.MIN_DRIVE_SPEED)
                     ))
+                    velocity = slow_velocity
                     motor_pair.move(
                         self.cfg.MOTOR_PAIR_ID,
-                        0,
+                        steering,
                         velocity=slow_velocity * direction * self.cfg.DRIVE_POLARITY,
                         acceleration=acceleration,
                     )
@@ -183,6 +211,7 @@ class Robot:
                 await runloop.sleep_ms(self.cfg.LOOP_MS)
         finally:
             motor_pair.stop(self.cfg.MOTOR_PAIR_ID)
+        await runloop.sleep_ms(100)
 
     async def move_attachment(self, port, rotations, speed=50):
         selected_port = (
