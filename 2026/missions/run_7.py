@@ -2,6 +2,8 @@
 
 from drive_tools import *
 
+print("RUN 7: forward 40 cm, then back 40 cm")
+
 mission = Robot()
 
 

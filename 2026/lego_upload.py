@@ -194,7 +194,9 @@ class HubConnection:
             CLEAR_SLOT_RESPONSE,
         )
         if response[1] != 0:
-            print("Slot was already empty or could not be cleared; continuing.")
+            raise RuntimeError(
+                f"Hub rejected clearing slot {slot} (status {response[1]})."
+            )
 
     async def upload(self, program, slot):
         response = await self.request(

@@ -1,4 +1,4 @@
-# LEGO slot:5
+# LEGO slot:5 autostart
 
 from drive_tools import *
 
